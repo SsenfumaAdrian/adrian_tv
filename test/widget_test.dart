@@ -24,6 +24,7 @@ void main() {
     WidgetTester tester, {
     List<Channel> channels = const [],
     bool onboarded = true,
+    Map<String, String> sourceErrors = const {},
   }) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -31,7 +32,11 @@ void main() {
           appPreferencesProvider.overrideWithValue(
             await buildPrefs(onboarded: onboarded),
           ),
-          channelsProvider.overrideWith((ref) => Future.value(channels)),
+          playlistLoadProvider.overrideWith(
+            (ref) => Future.value(
+              PlaylistLoad(channels: channels, errors: sourceErrors),
+            ),
+          ),
           epgIndexProvider.overrideWith((ref) => EpgIndex(const [])),
         ],
         child: const AdrianTvApp(),
@@ -107,5 +112,33 @@ void main() {
     await tester.tap(find.byTooltip('Add to favourites'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('Remove from favourites'), findsOneWidget);
+  });
+
+  testWidgets('failed sources surface a warning banner on Live TV', (
+    tester,
+  ) async {
+    const channels = [
+      Channel(
+        id: 'c1',
+        name: 'Working Channel',
+        streamUrl: 'http://example.com/1.ts',
+        sourceId: 'demo',
+      ),
+    ];
+    await pumpApp(
+      tester,
+      channels: channels,
+      sourceErrors: {'Broken playlist': 'HTTP 503 Service Unavailable'},
+    );
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Live TV').last);
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Broken playlist failed: HTTP 503'),
+      findsOneWidget,
+    );
+    expect(find.text('Working Channel'), findsOneWidget);
   });
 }

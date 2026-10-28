@@ -69,6 +69,11 @@ Key decisions:
 - [x] EPG tiered matching: exact tvg-id, then normalised display-name with
       quality-suffix stripping (HD/FHD/SD/4k/…)
 - [x] Player audio-track selection (media_kit track list, Auto/Off included)
+- [x] Alternate-stream failover: same-name mirror URLs are tried before the
+      error overlay is shown
+- [x] Per-source error surfacing: playlistLoadProvider reports a
+      source→error map; Live TV shows a warning banner and the rest of the
+      sources keep working
 
 ### Phase 4 — Streaming experience — DONE (2026-10-28)
 - [x] Cinematic home: featured hero, continue-watching, favourites, group rails
@@ -88,7 +93,7 @@ Key decisions:
 
 ### Phase 6 — Hardening — PARTIAL
 - [x] Unit tests for parsers/models/stores; widget tests for key screens
-      (30 tests, all passing; flutter analyze clean)
+      (33 tests, all passing; flutter analyze clean)
 - [x] Security basics: http(s)-only source validation, no credentials stored,
       per-source failure isolation; keystore files confirmed git-ignored
 - [x] Playlist scale test (5,000 channels parsed under a strict time bound)

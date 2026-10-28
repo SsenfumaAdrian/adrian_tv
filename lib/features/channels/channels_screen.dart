@@ -34,7 +34,7 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final channelsAsync = ref.watch(channelsProvider);
+    final loadAsync = ref.watch(playlistLoadProvider);
     final groups = ref.watch(channelGroupsProvider);
     final favourites = ref.watch(favouritesProvider);
 
@@ -59,18 +59,19 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
           ),
         ],
       ),
-      body: channelsAsync.when(
+      body: loadAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => _MessageState(
           icon: Icons.cloud_off,
           title: 'Could not load channels',
           message: '$e',
           action: TextButton(
-            onPressed: () => ref.invalidate(channelsProvider),
+            onPressed: () => ref.invalidate(playlistLoadProvider),
             child: const Text('Retry'),
           ),
         ),
-        data: (all) {
+        data: (load) {
+          final all = load.channels;
           if (all.isEmpty) {
             return _MessageState(
               icon: Icons.live_tv,
@@ -84,6 +85,8 @@ class _ChannelsScreenState extends ConsumerState<ChannelsScreen> {
           final channels = _filter(all, favourites);
           return Column(
             children: [
+              if (load.errors.isNotEmpty)
+                _SourceErrorBanner(errors: load.errors),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                 child: TextField(
@@ -171,6 +174,47 @@ class _ChannelGrid extends StatelessWidget {
       itemCount: channels.length,
       itemBuilder: (context, i) =>
           ChannelCard(channel: channels[i], width: double.infinity),
+    );
+  }
+}
+
+class _SourceErrorBanner extends StatelessWidget {
+  const _SourceErrorBanner({required this.errors});
+
+  final Map<String, String> errors;
+
+  @override
+  Widget build(BuildContext context) {
+    final first = errors.entries.first;
+    final more = errors.length - 1;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.danger.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.danger.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: AppColors.danger,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '${first.key} failed: ${first.value}'
+              '${more > 0 ? ' (+$more other failed source${more > 1 ? 's' : ''})' : ''}',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12.5),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

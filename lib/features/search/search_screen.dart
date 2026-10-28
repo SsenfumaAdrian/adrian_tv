@@ -24,8 +24,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final channelsAsync = ref.watch(channelsProvider);
-    final channels = channelsAsync.valueOrNull ?? const [];
+    final channelsAsync = ref.watch(playlistLoadProvider);
+    final channels = channelsAsync.valueOrNull?.channels ?? const [];
     final q = _query.trim().toLowerCase();
 
     final results = q.isEmpty

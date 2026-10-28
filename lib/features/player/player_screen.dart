@@ -12,6 +12,7 @@ import '../../core/theme/app_theme.dart';
 import '../../data/models/channel.dart';
 import '../../data/models/programme.dart';
 import '../../data/models/watch_progress.dart';
+import '../../data/services/stream_failover.dart';
 import '../providers/app_providers.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
@@ -29,9 +30,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   Channel? _channel;
   String? _error;
+  String? _failoverNotice;
   bool _controlsVisible = true;
   bool _opened = false;
   Timer? _hideTimer;
+  List<String> _candidates = const [];
+  int _candidateIndex = 0;
+  List<Channel> _allChannels = const [];
 
   static final _time = DateFormat.Hm();
 
@@ -39,14 +44,32 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   void initState() {
     super.initState();
     WakelockPlus.enable();
-    _player.stream.error.listen((message) {
-      if (message.isNotEmpty && mounted) {
-        setState(() => _error = message);
+    _player.stream.error.listen(_onPlayerError);
+    _player.stream.playing.listen((playing) {
+      if (playing && mounted) {
+        setState(() {
+          _error = null;
+          _failoverNotice = null;
+        });
       }
     });
-    _player.stream.playing.listen((playing) {
-      if (playing && mounted) setState(() => _error = null);
-    });
+  }
+
+  /// Walk same-name mirror URLs before admitting defeat.
+  void _onPlayerError(String message) {
+    if (message.isEmpty || !mounted) return;
+    if (_candidateIndex + 1 < _candidates.length) {
+      _candidateIndex++;
+      setState(() {
+        _error = null;
+        _failoverNotice =
+            'Stream failed — switching to alternate '
+            '${_candidateIndex + 1} of ${_candidates.length}…';
+      });
+      _player.open(Media(_candidates[_candidateIndex]), play: true);
+      return;
+    }
+    setState(() => _error = message);
   }
 
   @override
@@ -61,7 +84,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     final channel = _channel;
     if (channel == null) return;
     _opened = false;
-    setState(() => _error = null);
+    setState(() {
+      _error = null;
+      _failoverNotice = null;
+    });
     _open(channel);
   }
 
@@ -79,7 +105,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final channelsAsync = ref.watch(channelsProvider);
+    final channelsAsync = ref.watch(playlistLoadProvider);
 
     return channelsAsync.when(
       loading: () =>
@@ -93,7 +119,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           ),
         ),
       ),
-      data: (channels) {
+      data: (load) {
+        final channels = load.channels;
+        _allChannels = channels;
         final channel = channels
             .where((c) => c.id == widget.channelId)
             .firstOrNull;
@@ -122,8 +150,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       if (!mounted || _opened) return;
       _opened = true;
       _channel = channel;
-      setState(() => _error = null);
-      _player.open(Media(channel.streamUrl), play: true);
+      _candidates = StreamFailover.candidatesFor(channel, _allChannels);
+      _candidateIndex = 0;
+      setState(() {
+        _error = null;
+        _failoverNotice = null;
+      });
+      _player.open(Media(_candidates.first), play: true);
       ref
           .read(historyProvider.notifier)
           .record(
@@ -330,6 +363,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                     ),
                                     overflow: TextOverflow.ellipsis,
                                   ),
+                                  if (_failoverNotice != null)
+                                    Text(
+                                      _failoverNotice!,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.cyan,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   if (programme != null)
                                     Text(
                                       '${programme.title} · '

@@ -80,38 +80,54 @@ final sourcesProvider = NotifierProvider<SourcesNotifier, List<ContentSource>>(
 // Channels
 // ---------------------------------------------------------------------------
 
-/// All channels from enabled sources. A single failing source is skipped
-/// (surfaced via [channelLoadErrorsProvider]) instead of breaking the app.
-final channelsProvider = FutureProvider<List<Channel>>((ref) async {
+/// Result of loading every enabled source. A single failing source is
+/// reported in [errors] instead of breaking the whole channel list.
+class PlaylistLoad {
+  const PlaylistLoad({required this.channels, required this.errors});
+
+  final List<Channel> channels;
+
+  /// Source name -> human-readable failure reason.
+  final Map<String, String> errors;
+}
+
+final playlistLoadProvider = FutureProvider<PlaylistLoad>((ref) async {
   final sources = ref.watch(sourcesProvider).where((s) => s.enabled).toList();
   final repo = ref.watch(channelRepositoryProvider);
-  final results = await Future.wait(
+  final channels = <Channel>[];
+  final errors = <String, String>{};
+  await Future.wait(
     sources.map((s) async {
       try {
-        return await repo.loadChannels(s);
-      } on Exception {
-        return <Channel>[];
+        channels.addAll(await repo.loadChannels(s));
+      } on PlaylistException catch (e) {
+        errors[s.name] = e.message;
+      } on Exception catch (e) {
+        errors[s.name] = '$e';
       }
     }),
   );
-  final channels = results.expand((e) => e).toList();
   channels.sort((a, b) {
     final oa = a.order ?? 1 << 30;
     final ob = b.order ?? 1 << 30;
     if (oa != ob) return oa.compareTo(ob);
     return a.name.toLowerCase().compareTo(b.name.toLowerCase());
   });
-  return channels;
+  return PlaylistLoad(channels: channels, errors: errors);
 });
 
+final channelsProvider = Provider<List<Channel>>(
+  (ref) => ref.watch(playlistLoadProvider).valueOrNull?.channels ?? const [],
+);
+
 final channelGroupsProvider = Provider<Set<String>>((ref) {
-  final channels = ref.watch(channelsProvider).valueOrNull ?? const [];
+  final channels = ref.watch(channelsProvider);
   return channels.map((c) => c.group ?? 'Uncategorised').toSet();
 });
 
 final favouriteChannelsProvider = Provider<List<Channel>>((ref) {
   final ids = ref.watch(favouritesProvider);
-  final channels = ref.watch(channelsProvider).valueOrNull ?? const [];
+  final channels = ref.watch(channelsProvider);
   return channels.where((c) => ids.contains(c.id)).toList();
 });
 

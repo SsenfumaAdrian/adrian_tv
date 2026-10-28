@@ -14,7 +14,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sources = ref.watch(sourcesProvider);
-    final channelsCount = ref.watch(channelsProvider).valueOrNull?.length ?? 0;
+    final channelsCount = ref.watch(channelsProvider).length;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -111,7 +111,7 @@ class SettingsScreen extends ConsumerWidget {
                   leading: const Icon(Icons.refresh),
                   title: const Text('Reload all playlists'),
                   subtitle: Text('$channelsCount channels currently loaded'),
-                  onTap: () => ref.invalidate(channelsProvider),
+                  onTap: () => ref.invalidate(playlistLoadProvider),
                 ),
                 ListTile(
                   leading: const Icon(Icons.history),

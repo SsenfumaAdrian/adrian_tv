@@ -17,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final channelsAsync = ref.watch(channelsProvider);
+    final channelsAsync = ref.watch(playlistLoadProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -41,16 +41,16 @@ class HomeScreen extends ConsumerWidget {
                     style: const TextStyle(color: AppColors.textSecondary),
                   ),
                   TextButton(
-                    onPressed: () => ref.invalidate(channelsProvider),
+                    onPressed: () => ref.invalidate(playlistLoadProvider),
                     child: const Text('Retry'),
                   ),
                 ],
               ),
             ),
           ),
-          data: (channels) => channels.isEmpty
+          data: (load) => load.channels.isEmpty
               ? const _EmptyHome()
-              : _HomeBody(channels: channels),
+              : _HomeBody(channels: load.channels),
         ),
       ),
     );

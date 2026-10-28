@@ -45,7 +45,7 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final channelsAsync = ref.watch(channelsProvider);
+    final channelsAsync = ref.watch(playlistLoadProvider);
     final epgAsync = ref.watch(epgIndexProvider);
 
     return Scaffold(
@@ -73,7 +73,8 @@ class _GuideScreenState extends ConsumerState<GuideScreen> {
             style: const TextStyle(color: AppColors.textSecondary),
           ),
         ),
-        data: (channels) {
+        data: (load) {
+          final channels = load.channels;
           final index = epgAsync.valueOrNull;
           if (channels.isEmpty) {
             return const Center(
