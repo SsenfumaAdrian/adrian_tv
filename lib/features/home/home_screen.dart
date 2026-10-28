@@ -8,9 +8,11 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/brand.dart';
 import '../../core/widgets/tv_focusable.dart';
 import '../../data/models/channel.dart';
+import '../../data/models/media_item.dart';
 import '../../data/models/watch_progress.dart';
 import '../channels/widgets/channel_card.dart';
 import '../providers/app_providers.dart';
+import '../vod/widgets/media_poster.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -104,6 +106,9 @@ class _HomeBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final favourites = ref.watch(favouriteChannelsProvider);
     final continueWatching = ref.watch(continueWatchingProvider);
+    final catalog = ref.watch(mediaCatalogProvider).valueOrNull;
+    final movies = catalog?.ofKind(MediaKind.movie) ?? const [];
+    final series = catalog?.ofKind(MediaKind.series) ?? const [];
     final byId = {for (final c in channels) c.id: c};
 
     final groups = <String, List<Channel>>{};
@@ -140,6 +145,20 @@ class _HomeBody extends ConsumerWidget {
           _Rail(
             title: 'My favourites',
             children: [for (final c in favourites) ChannelCard(channel: c)],
+          ),
+        if (movies.isNotEmpty)
+          _Rail(
+            title: 'Movies',
+            seeAllRoute: AppRoute.vod,
+            height: 216,
+            children: [for (final m in movies.take(18)) MediaPoster(item: m)],
+          ),
+        if (series.isNotEmpty)
+          _Rail(
+            title: 'Series',
+            seeAllRoute: AppRoute.vod,
+            height: 216,
+            children: [for (final s in series.take(18)) MediaPoster(item: s)],
           ),
         for (final entry in groups.entries)
           _Rail(
@@ -246,7 +265,7 @@ class _Hero extends ConsumerWidget {
                           vertical: 14,
                         ),
                       ),
-                      onPressed: () => context.go('/player/${channel.id}'),
+                      onPressed: () => context.go(AppRoute.player(channel.id)),
                       icon: const Icon(Icons.play_arrow_rounded),
                       label: const Text('Watch live'),
                     ),
@@ -276,11 +295,17 @@ class _Hero extends ConsumerWidget {
 }
 
 class _Rail extends StatelessWidget {
-  const _Rail({required this.title, required this.children, this.seeAllRoute});
+  const _Rail({
+    required this.title,
+    required this.children,
+    this.seeAllRoute,
+    this.height = 140,
+  });
 
   final String title;
   final List<Widget> children;
   final String? seeAllRoute;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
@@ -310,7 +335,7 @@ class _Rail extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           SizedBox(
-            height: 140,
+            height: height,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -338,7 +363,7 @@ class _HistoryCard extends StatelessWidget {
     return SizedBox(
       width: 160,
       child: TvFocusable(
-        onTap: () => context.go('/player/${channel.id}'),
+        onTap: () => context.go(AppRoute.player(channel.id)),
         semanticLabel: 'Resume ${channel.name}',
         borderRadius: 14,
         child: Column(

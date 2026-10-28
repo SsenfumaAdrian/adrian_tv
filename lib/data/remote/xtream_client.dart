@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../local/secure_store.dart';
 import '../models/channel.dart';
+import '../models/media_item.dart';
 
 /// Xtream Codes API client (player_api.php).
 ///
@@ -45,6 +46,39 @@ class XtreamClient {
         .cast<Map<String, dynamic>>()
         .map(XtreamStream.fromJson)
         .toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getVodStreams(
+    String baseUrl,
+    ProviderCredentials credentials,
+  ) async {
+    final data = await _get(baseUrl, credentials, action: 'get_vod_streams');
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<List<Map<String, dynamic>>> getSeries(
+    String baseUrl,
+    ProviderCredentials credentials,
+  ) async {
+    final data = await _get(baseUrl, credentials, action: 'get_series');
+    return (data as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<Map<String, dynamic>> getSeriesInfo(
+    String baseUrl,
+    ProviderCredentials credentials,
+    String seriesId,
+  ) async {
+    final response = await _dio.get<dynamic>(
+      XtreamClient._apiUrl(baseUrl),
+      queryParameters: {
+        ...XtreamClient._authParams(credentials),
+        'action': 'get_series_info',
+        'series_id': seriesId,
+      },
+    );
+    final data = response.data;
+    return data is Map ? data.cast<String, dynamic>() : const {};
   }
 
   /// Returns true when the provider accepts these credentials.
@@ -177,5 +211,132 @@ abstract final class XtreamMapper {
       );
     }
     return channels;
+  }
+}
+
+/// Pure mapping from Xtream VOD payloads to [MediaItem]/[Episode] models.
+abstract final class XtreamMediaMapper {
+  static String movieUrl(
+    String baseUrl,
+    ProviderCredentials credentials,
+    String streamId,
+    String extension,
+  ) => _streamUrl(baseUrl, credentials, 'movie', streamId, extension);
+
+  static String episodeUrl(
+    String baseUrl,
+    ProviderCredentials credentials,
+    String streamId,
+    String extension,
+  ) => _streamUrl(baseUrl, credentials, 'series', streamId, extension);
+
+  static String _streamUrl(
+    String baseUrl,
+    ProviderCredentials credentials,
+    String verb,
+    String streamId,
+    String extension,
+  ) =>
+      '${XtreamClient.trimSlash(baseUrl)}/$verb/'
+      '${Uri.encodeComponent(credentials.username)}/'
+      '${Uri.encodeComponent(credentials.password)}/'
+      '$streamId.${Uri.encodeComponent(extension)}';
+
+  static MediaItem? movieFromJson(
+    Map<String, dynamic> json, {
+    required String baseUrl,
+    required ProviderCredentials credentials,
+    required String sourceId,
+  }) {
+    final streamId = '${json['stream_id'] ?? ''}';
+    final name = '${json['name'] ?? ''}';
+    if (streamId.isEmpty || name.isEmpty) return null;
+    final rating = double.tryParse('${json['rating'] ?? ''}');
+    return MediaItem(
+      id: MediaItem.movieId(sourceId, streamId),
+      sourceId: sourceId,
+      kind: MediaKind.movie,
+      title: name,
+      providerId: streamId,
+      playUrl: movieUrl(
+        baseUrl,
+        credentials,
+        streamId,
+        '${json['container_extension'] ?? 'mp4'}',
+      ),
+      coverUrl: _nullIfEmpty(json['stream_icon']),
+      genre: _nullIfEmpty(json['category_id']),
+      rating: rating,
+    );
+  }
+
+  static MediaItem? seriesFromJson(
+    Map<String, dynamic> json, {
+    required String sourceId,
+  }) {
+    final id = '${json['series_id'] ?? ''}';
+    final name = '${json['name'] ?? ''}';
+    if (id.isEmpty || name.isEmpty) return null;
+    final rating = double.tryParse('${json['rating'] ?? ''}');
+    return MediaItem(
+      id: MediaItem.seriesId(sourceId, id),
+      sourceId: sourceId,
+      kind: MediaKind.series,
+      title: name,
+      providerId: id,
+      coverUrl: _nullIfEmpty(json['cover']),
+      plot: _nullIfEmpty(json['plot']),
+      genre: _nullIfEmpty(json['genre']),
+      releaseDate: _nullIfEmpty(json['releaseDate']),
+      rating: rating,
+      categoryId: json['category_id'] == null ? null : '${json['category_id']}',
+    );
+  }
+
+  /// `get_series_info` payload: `{info: {...}, episodes: {"1": [...]}}`.
+  static SeriesContent seriesContent(
+    Map<String, dynamic> payload, {
+    required MediaItem item,
+    required String baseUrl,
+    required ProviderCredentials credentials,
+  }) {
+    final bySeason = <int, List<Episode>>{};
+    final raw = payload['episodes'];
+    if (raw is Map) {
+      for (final entry in raw.entries) {
+        final season = int.tryParse('${entry.key}') ?? 1;
+        final list = (entry.value as List?) ?? const [];
+        for (final e in list.cast<Map<String, dynamic>>()) {
+          final streamId = '${e['id'] ?? e['stream_id'] ?? ''}';
+          if (streamId.isEmpty) continue;
+          final episodeNumber = int.tryParse('${e['episode_num'] ?? ''}') ?? 0;
+          final title = '${e['title'] ?? 'Episode $episodeNumber'}';
+          bySeason
+              .putIfAbsent(season, () => [])
+              .add(
+                Episode(
+                  id: 'ep:${item.sourceId}:${item.providerId}:$streamId',
+                  seriesRef: item.id,
+                  season: season,
+                  number: episodeNumber,
+                  title: title,
+                  playUrl: episodeUrl(
+                    baseUrl,
+                    credentials,
+                    streamId,
+                    '${e['container_extension'] ?? 'mp4'}',
+                  ),
+                  thumbUrl: _nullIfEmpty((e['info'] as Map?)?['movie_image']),
+                  plot: _nullIfEmpty((e['info'] as Map?)?['plot']),
+                  duration: _nullIfEmpty((e['info'] as Map?)?['duration']),
+                ),
+              );
+        }
+      }
+    }
+    for (final list in bySeason.values) {
+      list.sort((a, b) => a.number.compareTo(b.number));
+    }
+    return SeriesContent(item: item, episodesBySeason: bySeason);
   }
 }

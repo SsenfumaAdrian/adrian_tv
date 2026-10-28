@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/tv_focusable.dart';
 import '../../data/models/channel.dart';
@@ -119,7 +120,7 @@ class _GuideRow extends StatelessWidget {
         .toList();
 
     return TvFocusable(
-      onTap: () => context.go('/player/${channel.id}'),
+      onTap: () => context.go(AppRoute.player(channel.id)),
       semanticLabel: 'Play ${channel.name}',
       borderRadius: 12,
       child: Padding(

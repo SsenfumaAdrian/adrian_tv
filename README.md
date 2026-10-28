@@ -15,6 +15,9 @@ provide them.
 - Cinematic dark home screen with featured hero, content rails, continue
   watching and favourites.
 - Live TV: channel grid/list, category chips, in-list filter, favourites.
+- On Demand: movies and series browsing with poster grids, series detail,
+  seasons and episode playback — for Xtream providers that include a VOD
+  catalogue. Sources without VOD show a clear empty state.
 - Player (media_kit / libmpv+FFmpeg): HLS & TS playback, auto-hiding controls,
   stream error overlay with retry, audio-track selection, wake-lock,
   "up next" guide panel.

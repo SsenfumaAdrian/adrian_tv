@@ -80,8 +80,12 @@ Key decisions:
 - [x] Search across channels/groups with empty & loading states
 - [x] Watch history + continue watching
 - [x] Branded first-run onboarding (3 slides, gated by preferences flag)
-- [ ] Movies/series catalogue view — deferred: no bundled provider supports
-      VOD; adapter slot exists in ContentSource for authorised providers later.
+- [x] Movies & series browsing for Xtream providers that expose a VOD
+      catalogue (On Demand tab, poster grid, series detail with seasons and
+      episode playback). Live-only and M3U sources show an explanatory empty
+      state — no fake content.
+- [x] Unified PlaybackTarget: one player for live channels, movies and
+      episodes; ids are URL-encoded (fixes channel ids containing '#')
 
 ### Phase 5 — Android TV — PARTIAL
 - [x] Leanback launcher intent + touchscreen-not-required manifest flags
@@ -93,7 +97,7 @@ Key decisions:
 
 ### Phase 6 — Hardening — PARTIAL
 - [x] Unit tests for parsers/models/stores; widget tests for key screens
-      (33 tests, all passing; flutter analyze clean)
+      (38 tests, all passing; flutter analyze clean)
 - [x] Security basics: http(s)-only source validation, no credentials stored,
       per-source failure isolation; keystore files confirmed git-ignored
 - [x] Playlist scale test (5,000 channels parsed under a strict time bound)

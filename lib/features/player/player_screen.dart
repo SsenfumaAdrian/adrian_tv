@@ -9,16 +9,15 @@ import 'package:media_kit_video/media_kit_video.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../core/theme/app_theme.dart';
-import '../../data/models/channel.dart';
 import '../../data/models/programme.dart';
 import '../../data/models/watch_progress.dart';
-import '../../data/services/stream_failover.dart';
 import '../providers/app_providers.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
-  const PlayerScreen({super.key, required this.channelId});
+  const PlayerScreen({super.key, required this.targetId});
 
-  final String channelId;
+  /// Channel id, `vod:<src>:<id>` movie id or `ep:<src>:<series>:<id>`.
+  final String targetId;
 
   @override
   ConsumerState<PlayerScreen> createState() => _PlayerScreenState();
@@ -28,7 +27,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   late final Player _player = Player();
   late final VideoController _controller = VideoController(_player);
 
-  Channel? _channel;
+  PlaybackTarget? _target;
   String? _error;
   String? _failoverNotice;
   bool _controlsVisible = true;
@@ -36,7 +35,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Timer? _hideTimer;
   List<String> _candidates = const [];
   int _candidateIndex = 0;
-  List<Channel> _allChannels = const [];
 
   static final _time = DateFormat.Hm();
 
@@ -81,14 +79,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   void _retry() {
-    final channel = _channel;
-    if (channel == null) return;
+    if (_target == null) return;
     _opened = false;
     setState(() {
       _error = null;
       _failoverNotice = null;
     });
-    _open(channel);
+    _open(_target!);
   }
 
   void _toggleControls() {
@@ -105,52 +102,47 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final channelsAsync = ref.watch(playlistLoadProvider);
+    final targetAsync = ref.watch(playbackTargetProvider(widget.targetId));
 
-    return channelsAsync.when(
+    return targetAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: Center(
           child: Text(
-            'Channel list unavailable: $e',
+            'Playback is unavailable: $e',
             style: const TextStyle(color: AppColors.textSecondary),
           ),
         ),
       ),
-      data: (load) {
-        final channels = load.channels;
-        _allChannels = channels;
-        final channel = channels
-            .where((c) => c.id == widget.channelId)
-            .firstOrNull;
-        if (channel == null) {
+      data: (target) {
+        if (target == null || target.candidates.isEmpty) {
           return Scaffold(
             appBar: AppBar(),
             body: const Center(
               child: Text(
-                'This channel is no longer available. Refresh your sources '
+                'This item is no longer available. Refresh your sources '
                 'in Settings.',
                 style: TextStyle(color: AppColors.textSecondary),
               ),
             ),
           );
         }
-        _open(channel);
-        return _playerView(channel);
+        _open(target);
+        return _playerView(target);
       },
     );
   }
 
-  void _open(Channel channel) {
+  void _open(PlaybackTarget target) {
     if (_opened) return;
     // Defer side effects out of the build phase.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || _opened) return;
       _opened = true;
-      _channel = channel;
-      _candidates = StreamFailover.candidatesFor(channel, _allChannels);
+      _target = target;
+      _candidates = target.candidates;
       _candidateIndex = 0;
       setState(() {
         _error = null;
@@ -161,24 +153,28 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           .read(historyProvider.notifier)
           .record(
             WatchProgress(
-              channelId: channel.id,
-              channelName: channel.name,
+              channelId: target.id,
+              channelName: target.title,
               watchedAt: DateTime.now(),
-              logoUrl: channel.logoUrl,
+              logoUrl: target.logoUrl,
             ),
           );
       _scheduleHide();
     });
   }
 
-  Widget _playerView(Channel channel) {
-    final programme = ref.watch(currentProgrammeProvider(channel));
-    final upcoming =
-        ref
-            .watch(epgIndexProvider)
-            .valueOrNull
-            ?.upcomingForChannel(channel, limit: 5) ??
-        const [];
+  Widget _playerView(PlaybackTarget target) {
+    final channel = target.channel;
+    final programme = channel == null
+        ? null
+        : ref.watch(currentProgrammeProvider(channel));
+    final upcoming = channel == null
+        ? const <Programme>[]
+        : ref
+                  .watch(epgIndexProvider)
+                  .valueOrNull
+                  ?.upcomingForChannel(channel, limit: 5) ??
+              const [];
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -193,7 +189,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             ),
             if (_error != null) _errorOverlay(),
             if (_controlsVisible && _error == null)
-              _overlay(channel, programme, upcoming),
+              _overlay(target, programme, upcoming),
           ],
         ),
       ),
@@ -267,18 +263,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   };
 
   void _saveProgress() {
-    final channel = _channel;
-    if (channel == null) return;
+    final target = _target;
+    if (target == null) return;
     ref
         .read(historyProvider.notifier)
         .record(
           WatchProgress(
-            channelId: channel.id,
-            channelName: channel.name,
+            channelId: target.id,
+            channelName: target.title,
             watchedAt: DateTime.now(),
             positionMs: _player.state.position.inMilliseconds,
             durationMs: _player.state.duration.inMilliseconds,
-            logoUrl: channel.logoUrl,
+            logoUrl: target.logoUrl,
           ),
         );
   }
@@ -317,7 +313,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   Widget _overlay(
-    Channel channel,
+    PlaybackTarget target,
     Programme? programme,
     List<Programme> upcoming,
   ) {
@@ -356,7 +352,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    channel.name,
+                                    target.title,
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w700,
                                       fontSize: 17,
@@ -385,7 +381,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                 ],
                               ),
                             ),
-                            if (channel.isHls)
+                            if (target.channel?.isHls ?? false)
                               const Padding(
                                 padding: EdgeInsets.only(right: 12),
                                 child: _LiveBadge(),

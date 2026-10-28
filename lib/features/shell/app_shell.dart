@@ -27,6 +27,12 @@ class AppShell extends StatelessWidget {
       label: 'Live TV',
     ),
     (
+      path: AppRoute.vod,
+      icon: Icons.movie_outlined,
+      selected: Icons.movie,
+      label: 'On Demand',
+    ),
+    (
       path: AppRoute.guide,
       icon: Icons.calendar_month_outlined,
       selected: Icons.calendar_month,

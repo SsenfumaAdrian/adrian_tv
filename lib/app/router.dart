@@ -10,17 +10,24 @@ import '../features/search/search_screen.dart';
 import '../features/settings/settings_screen.dart';
 import '../features/shell/app_shell.dart';
 import '../features/splash/splash_screen.dart';
+import '../features/vod/series_detail_screen.dart';
+import '../features/vod/vod_screen.dart';
 
 abstract final class AppRoute {
   static const splash = '/splash';
   static const onboarding = '/onboarding';
   static const home = '/home';
   static const live = '/live';
+  static const vod = '/vod';
   static const guide = '/guide';
   static const search = '/search';
   static const settings = '/settings';
 
-  static String player(String channelId) => '/player/$channelId';
+  static String player(String targetId) =>
+      '/player/${Uri.encodeComponent(targetId)}';
+
+  static String series(String sourceId, String seriesId) =>
+      '/series/$sourceId/$seriesId';
 }
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -52,6 +59,10 @@ GoRouter buildRouter() => GoRouter(
           builder: (context, state) => const ChannelsScreen(),
         ),
         GoRoute(
+          path: AppRoute.vod,
+          builder: (context, state) => const VodScreen(),
+        ),
+        GoRoute(
           path: AppRoute.guide,
           builder: (context, state) => const GuideScreen(),
         ),
@@ -66,10 +77,18 @@ GoRouter buildRouter() => GoRouter(
       ],
     ),
     GoRoute(
-      path: '/player/:channelId',
+      path: '/player/:id',
       parentNavigatorKey: rootNavigatorKey,
       builder: (context, state) =>
-          PlayerScreen(channelId: state.pathParameters['channelId']!),
+          PlayerScreen(targetId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/series/:sourceId/:seriesId',
+      parentNavigatorKey: rootNavigatorKey,
+      builder: (context, state) => SeriesDetailScreen(
+        sourceId: state.pathParameters['sourceId']!,
+        seriesId: state.pathParameters['seriesId']!,
+      ),
     ),
   ],
 );

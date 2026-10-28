@@ -4,10 +4,13 @@ import '../../data/local/app_preferences.dart';
 import '../../data/local/secure_store.dart';
 import '../../data/models/channel.dart';
 import '../../data/models/content_source.dart';
+import '../../data/models/media_item.dart';
 import '../../data/models/programme.dart';
 import '../../data/models/watch_progress.dart';
 import '../../data/repositories/channel_repository.dart';
+import '../../data/repositories/media_repository.dart';
 import '../../data/services/epg_service.dart';
+import '../../data/services/stream_failover.dart';
 import '../../data/parsers/xmltv_parser.dart';
 
 /// Overridden with the initialised instance in `main.dart`.
@@ -210,4 +213,111 @@ final currentProgrammeProvider = Provider.family<Programme?, Channel?>((
   if (channel == null) return null;
   final index = ref.watch(epgIndexProvider).valueOrNull;
   return index?.nowFor(channel);
+});
+
+// ---------------------------------------------------------------------------
+// Movies & series (VOD)
+// ---------------------------------------------------------------------------
+
+final mediaRepositoryProvider = Provider<MediaRepository>(
+  (ref) => MediaRepository(credentials: ref.watch(credentialsStoreProvider)),
+);
+
+/// Movies/series from enabled Xtream providers. Empty when no such source
+/// is configured; failing providers are reported in [CatalogLoad.errors].
+final mediaCatalogProvider = FutureProvider<CatalogLoad>((ref) async {
+  final sources = ref
+      .watch(sourcesProvider)
+      .where((s) => s.enabled && s.type == SourceType.xtream)
+      .toList();
+  if (sources.isEmpty) {
+    return const CatalogLoad(items: [], errors: {});
+  }
+  return ref.watch(mediaRepositoryProvider).loadCatalog(sources);
+});
+
+final seriesContentProvider =
+    FutureProvider.family<SeriesContent?, (String, String)>((ref, key) async {
+      final (sourceId, seriesId) = key;
+      final source = ref
+          .watch(sourcesProvider)
+          .where((s) => s.id == sourceId)
+          .firstOrNull;
+      if (source == null) return null;
+      final catalog = await ref.watch(mediaCatalogProvider.future);
+      final item = catalog.items
+          .where((i) => i.id == MediaItem.seriesId(sourceId, seriesId))
+          .firstOrNull;
+      if (item == null) return null;
+      return ref.watch(mediaRepositoryProvider).loadSeries(source, item);
+    });
+
+// ---------------------------------------------------------------------------
+// Unified playback target
+// ---------------------------------------------------------------------------
+
+/// What the player should open: a live channel, a movie or one episode.
+/// [candidates] holds failover URLs in preference order.
+class PlaybackTarget {
+  const PlaybackTarget({
+    required this.id,
+    required this.title,
+    required this.candidates,
+    this.logoUrl,
+    this.channel,
+  });
+
+  final String id;
+  final String title;
+  final List<String> candidates;
+  final String? logoUrl;
+
+  /// Set for live TV so the player can show guide data.
+  final Channel? channel;
+}
+
+final playbackTargetProvider = FutureProvider.family<PlaybackTarget?, String>((
+  ref,
+  id,
+) async {
+  if (id.startsWith('vod:')) {
+    final catalog = await ref.watch(mediaCatalogProvider.future);
+    final item = catalog.items
+        .where((i) => i.id == id && i.playUrl != null)
+        .firstOrNull;
+    if (item == null) return null;
+    return PlaybackTarget(
+      id: item.id,
+      title: item.title,
+      candidates: [item.playUrl!],
+      logoUrl: item.coverUrl,
+    );
+  }
+  if (id.startsWith('ep:')) {
+    final parts = id.split(':');
+    if (parts.length != 4) return null;
+    final content = await ref.watch(
+      seriesContentProvider((parts[1], parts[2])).future,
+    );
+    final episode = content?.allEpisodes.where((e) => e.id == id).firstOrNull;
+    if (episode == null) return null;
+    return PlaybackTarget(
+      id: episode.id,
+      title:
+          '${content!.item.title} S${episode.season}:'
+          '${episode.number.toString().padLeft(2, '0')} ${episode.title}',
+      candidates: [episode.playUrl],
+      logoUrl: episode.thumbUrl ?? content.item.coverUrl,
+    );
+  }
+  final load = await ref.watch(playlistLoadProvider.future);
+  final channel = load.channels.where((c) => c.id == id).firstOrNull;
+  if (channel == null) return null;
+  return PlaybackTarget(
+    id: channel.id,
+    title: channel.name,
+    candidates: StreamFailover.candidatesFor(channel, load.channels),
+    logoUrl: channel.logoUrl,
+    channel: channel,
+  );
 });

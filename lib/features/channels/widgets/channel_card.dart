@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../app/router.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/tv_focusable.dart';
 import '../../../data/models/channel.dart';
@@ -29,7 +30,7 @@ class ChannelCard extends ConsumerWidget {
     final programme = ref.watch(currentProgrammeProvider(channel));
 
     return TvFocusable(
-      onTap: onTap ?? () => context.go('/player/${channel.id}'),
+      onTap: onTap ?? () => context.go(AppRoute.player(channel.id)),
       semanticLabel: 'Play ${channel.name}',
       child: SizedBox(
         width: width,
@@ -167,7 +168,7 @@ class ChannelListTile extends ConsumerWidget {
               ));
 
     return ListTile(
-      onTap: () => context.go('/player/${channel.id}'),
+      onTap: () => context.go(AppRoute.player(channel.id)),
       leading: SizedBox(
         width: 56,
         height: 40,
