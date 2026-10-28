@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../app/router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/brand.dart';
+import '../../core/widgets/tv_focusable.dart';
 import '../../data/models/channel.dart';
 import '../../data/models/watch_progress.dart';
 import '../channels/widgets/channel_card.dart';
@@ -336,9 +337,10 @@ class _HistoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: 160,
-      child: InkWell(
+      child: TvFocusable(
         onTap: () => context.go('/player/${channel.id}'),
-        borderRadius: BorderRadius.circular(14),
+        semanticLabel: 'Resume ${channel.name}',
+        borderRadius: 14,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

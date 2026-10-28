@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/tv_focusable.dart';
 import '../../data/models/channel.dart';
 import '../../data/models/programme.dart';
 import '../../data/parsers/xmltv_parser.dart';
@@ -116,8 +117,10 @@ class _GuideRow extends StatelessWidget {
         .take(3)
         .toList();
 
-    return InkWell(
+    return TvFocusable(
       onTap: () => context.go('/player/${channel.id}'),
+      semanticLabel: 'Play ${channel.name}',
+      borderRadius: 12,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(

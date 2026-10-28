@@ -75,20 +75,24 @@ Key decisions:
 ### Phase 5 — Android TV — PARTIAL
 - [x] Leanback launcher intent + touchscreen-not-required manifest flags
 - [x] Wide-screen rail layout at >= 900dp
-- [ ] Full D-pad focus map audit + TV text input (needs a TV emulator/device
-      session; no Android SDK is installed in the current environment)
+- [x] D-pad focus glow + Select/Enter activation on channel cards, guide
+      rows and history cards (`core/widgets/tv_focusable.dart`)
+- [ ] On-device D-pad traversal audit + TV text input (needs a TV
+      emulator/device session; no Android SDK in the current environment)
 
 ### Phase 6 — Hardening — PARTIAL
 - [x] Unit tests for parsers/models/stores; widget tests for key screens
-      (22 tests, all passing; flutter analyze clean)
+      (23 tests, all passing; flutter analyze clean)
 - [x] Security basics: http(s)-only source validation, no credentials stored,
-      per-source failure isolation
-- [ ] Playlist scale test (>5k channels) and drift migration decision
+      per-source failure isolation; keystore files confirmed git-ignored
+- [x] Playlist scale test (5,000 channels parsed under a strict time bound)
+- [ ] Drift migration decision once catalogue features (movies/series) start
 - [ ] Native build verification (blocked: Android SDK / VS C++ absent)
 
 ### Phase 7 — Release preparation — PARTIAL
 - [x] README with setup, features, limitations, legal notes
-- [ ] Signing config + build instructions verification (needs Android SDK)
+- [x] Android build + signing instructions documented (keystore not yet created)
+- [ ] Actual release build/sign run (needs Android SDK)
 
 ## Risks
 

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/tv_focusable.dart';
 import '../../../data/models/channel.dart';
 import '../../providers/app_providers.dart';
 
@@ -27,64 +28,58 @@ class ChannelCard extends ConsumerWidget {
     final isFavourite = favourites.contains(channel.id);
     final programme = ref.watch(currentProgrammeProvider(channel));
 
-    return Semantics(
-      button: true,
-      label: 'Play ${channel.name}',
-      child: InkWell(
-        onTap: onTap ?? () => context.go('/player/${channel.id}'),
-        borderRadius: BorderRadius.circular(14),
-        child: SizedBox(
-          width: width,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceBright,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _Logo(url: channel.logoUrl, name: channel.name),
+    return TvFocusable(
+      onTap: onTap ?? () => context.go('/player/${channel.id}'),
+      semanticLabel: 'Play ${channel.name}',
+      child: SizedBox(
+        width: width,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceBright,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white10),
                 ),
+                clipBehavior: Clip.antiAlias,
+                child: _Logo(url: channel.logoUrl, name: channel.name),
               ),
-              const SizedBox(height: 8),
-              Text(
-                channel.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13.5,
-                ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              channel.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13.5,
               ),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      programme == null
-                          ? (channel.group ?? '')
-                          : programme.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        color: AppColors.textSecondary,
-                      ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    programme == null ? (channel.group ?? '') : programme.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
                     ),
                   ),
-                  if (isFavourite)
-                    const Icon(
-                      Icons.star_rounded,
-                      size: 15,
-                      color: AppColors.cyan,
-                    ),
-                ],
-              ),
-            ],
-          ),
+                ),
+                if (isFavourite)
+                  const Icon(
+                    Icons.star_rounded,
+                    size: 15,
+                    color: AppColors.cyan,
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );

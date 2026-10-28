@@ -87,6 +87,25 @@ http://e/b.ts
       expect(channels.every((c) => c.group == 'Demo'), isTrue);
     });
 
+    test('parses a 5,000-channel playlist quickly', () {
+      final buffer = StringBuffer('#EXTM3U\n');
+      for (var i = 0; i < 5000; i++) {
+        buffer
+          ..writeln(
+            '#EXTINF:-1 tvg-id="ch$i" group-title="Group ${i % 50}",Channel $i',
+          )
+          ..writeln('http://example.com/ch/$i.m3u8');
+      }
+      final sw = Stopwatch()..start();
+      final channels = M3uParser.parse(buffer.toString(), sourceId: 'big');
+      sw.stop();
+      expect(channels, hasLength(5000));
+      expect(channels.first.group, 'Group 0');
+      expect(channels.last.name, 'Channel 4999');
+      // Generous ceiling: guards against accidental O(n^2) regressions.
+      expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
+    });
+
     test('Channel JSON round-trip', () {
       const c = Channel(
         id: 'x',

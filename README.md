@@ -36,8 +36,20 @@ flutter test                 # unit + widget tests
 flutter analyze              # static checks
 ```
 
-Android builds require the Android SDK (`flutter doctor` will tell you).
-Release signing is not yet configured — see docs/IMPLEMENTATION_PLAN.md.
+### Building for Android
+
+Requires the Android SDK (`flutter doctor` → Android toolchain).
+
+```bash
+flutter build apk --release          # universal release APK
+flutter build appbundle --release    # Play Store bundle
+```
+
+Release signing is **not configured yet**: create a keystore, reference it
+from `android/key.properties` (git-ignored), and wire it into
+`android/app/build.gradle.kts` before distributing. The manifest already
+declares the Leanback launcher category and marks touchscreen as optional,
+so the same build installs on Android TV.
 
 ## Adding a content source
 
