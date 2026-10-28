@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/local/app_preferences.dart';
+import '../../data/local/secure_store.dart';
 import '../../data/models/channel.dart';
 import '../../data/models/content_source.dart';
 import '../../data/models/programme.dart';
@@ -14,8 +15,12 @@ final appPreferencesProvider = Provider<AppPreferences>(
   (ref) => throw UnimplementedError('appPreferencesProvider not overridden'),
 );
 
+final credentialsStoreProvider = Provider<CredentialsStore>(
+  (ref) => SecureCredentialsStore(),
+);
+
 final channelRepositoryProvider = Provider<ChannelRepository>(
-  (ref) => ChannelRepository(),
+  (ref) => ChannelRepository(credentials: ref.watch(credentialsStoreProvider)),
 );
 
 final epgServiceProvider = Provider<EpgService>((ref) => EpgService());
@@ -46,6 +51,7 @@ class SourcesNotifier extends Notifier<List<ContentSource>> {
 
   Future<void> remove(String id) async {
     if (id == ContentSource.demoId) return; // demo source is always available
+    await ref.read(credentialsStoreProvider).delete(id);
     await _save(state.where((s) => s.id != id).toList());
   }
 
@@ -187,5 +193,5 @@ final currentProgrammeProvider = Provider.family<Programme?, Channel?>((
 ) {
   if (channel == null) return null;
   final index = ref.watch(epgIndexProvider).valueOrNull;
-  return index?.now(channel.tvgId);
+  return index?.nowFor(channel);
 });

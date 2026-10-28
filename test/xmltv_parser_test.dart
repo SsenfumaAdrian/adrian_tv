@@ -1,3 +1,4 @@
+import 'package:adrian_tv/data/models/channel.dart';
 import 'package:adrian_tv/data/models/programme.dart';
 import 'package:adrian_tv/data/models/watch_progress.dart';
 import 'package:adrian_tv/data/parsers/xmltv_parser.dart';
@@ -87,6 +88,43 @@ void main() {
       expect(p.progressAt(DateTime(2026, 1, 1, 8, 30)), 0.5);
       expect(p.progressAt(DateTime(2026, 1, 1, 7)), 0);
       expect(p.progressAt(DateTime(2026, 1, 1, 12)), 1);
+    });
+
+    test('resolveRef matches by normalised name when tvg-id absent', () {
+      final index = EpgIndex(
+        sample(),
+        channelDefinitions: const [
+          EpgChannelDefinition(id: 'a', displayName: 'Early Channel'),
+        ],
+      );
+      final channel = Channel(
+        id: 'x',
+        name: 'Early Channel HD', // quality suffix stripped
+        streamUrl: 'http://e/x.ts',
+        sourceId: 's',
+      );
+      expect(index.resolveRef(channel), 'a');
+      expect(
+        index.nowFor(channel, DateTime(2026, 1, 1, 8, 30))?.title,
+        'Early',
+      );
+    });
+
+    test('resolveRef prefers exact tvg-id over name match', () {
+      final index = EpgIndex(
+        sample(),
+        channelDefinitions: const [
+          EpgChannelDefinition(id: 'a', displayName: 'Early Channel'),
+        ],
+      );
+      final channel = Channel(
+        id: 'x',
+        name: 'Early Channel',
+        streamUrl: 'http://e/x.ts',
+        sourceId: 's',
+        tvgId: 'b', // 'b' exists in the index and wins
+      );
+      expect(index.resolveRef(channel), 'b');
     });
   });
 

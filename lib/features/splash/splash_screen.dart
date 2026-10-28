@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/brand.dart';
+import '../providers/app_providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -28,7 +29,8 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
 
   void _next() {
     if (!mounted) return;
-    context.go(AppRoute.home);
+    final seen = ref.read(appPreferencesProvider).onboardingComplete;
+    context.go(seen ? AppRoute.home : AppRoute.onboarding);
   }
 
   @override

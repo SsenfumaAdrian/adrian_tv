@@ -160,7 +160,7 @@ class ChannelListTile extends ConsumerWidget {
         : (ref
               .watch(epgIndexProvider)
               .valueOrNull
-              ?.upcoming(channel.tvgId, limit: 20)
+              ?.upcomingForChannel(channel, limit: 20)
               .firstWhere(
                 (p) => p.start.isAfter(now.start),
                 orElse: () => now,

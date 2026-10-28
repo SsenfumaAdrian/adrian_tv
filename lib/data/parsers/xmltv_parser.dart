@@ -1,5 +1,6 @@
 import 'package:xml/xml.dart';
 
+import '../models/channel.dart';
 import '../models/programme.dart';
 
 /// A single `<channel>` definition from an XMLTV document.
@@ -111,11 +112,36 @@ class XmltvParser {
 }
 
 /// In-memory index over a programme list for the guide UI.
+///
+/// Lookup is tiered like clubTivi's mapper (studied as reference, re-
+/// implemented): explicit `tvg-id` first, then normalised display-name
+/// matching so playlists without tvg-id still get guide data.
 class EpgIndex {
-  EpgIndex(Iterable<Programme> programmes)
-    : _byChannelRef = _groupByRef(programmes);
+  EpgIndex(
+    Iterable<Programme> programmes, {
+    Iterable<EpgChannelDefinition> channelDefinitions = const [],
+  }) : _byChannelRef = _groupByRef(programmes),
+       _refByNormalisedName = {
+         for (final def in channelDefinitions)
+           _normalise(def.displayName): def.id,
+       };
 
   final Map<String, List<Programme>> _byChannelRef;
+  final Map<String, String> _refByNormalisedName;
+
+  static final _qualitySuffix = RegExp(
+    r'(hd|fhd|uhd|sd|4k|8k|plus|hevc|x26[45]|720p|1080p|2160p)+$',
+  );
+
+  static String _normalise(String name) {
+    var n = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    String previous;
+    do {
+      previous = n;
+      n = n.replaceAll(_qualitySuffix, '');
+    } while (n != previous);
+    return n;
+  }
 
   static Map<String, List<Programme>> _groupByRef(
     Iterable<Programme> programmes,
@@ -131,6 +157,33 @@ class EpgIndex {
   }
 
   bool get isEmpty => _byChannelRef.isEmpty;
+
+  /// Resolve the guide channel id for [channel]: exact tvg-id, then
+  /// normalised name fallbacks (channel name, then tvg-name).
+  String? resolveRef(Channel channel) {
+    final tvgId = channel.tvgId;
+    if (tvgId != null && _byChannelRef.containsKey(tvgId)) return tvgId;
+    for (final name in [
+      channel.name,
+      if (channel.tvgName != null) channel.tvgName!,
+    ]) {
+      final ref = _refByNormalisedName[_normalise(name)];
+      if (ref != null && _byChannelRef.containsKey(ref)) return ref;
+    }
+    return tvgId;
+  }
+
+  List<Programme> programmesForChannel(Channel channel) =>
+      programmesFor(resolveRef(channel));
+
+  Programme? nowFor(Channel channel, [DateTime? at]) =>
+      now(resolveRef(channel), at);
+
+  List<Programme> upcomingForChannel(
+    Channel channel, {
+    DateTime? at,
+    int limit = 10,
+  }) => upcoming(resolveRef(channel), at: at, limit: limit);
 
   List<Programme> programmesFor(String? tvgId) {
     if (tvgId == null) return const [];

@@ -64,11 +64,17 @@ Key decisions:
 - [x] Player screen (media_kit): controls, error/retry, wake-lock, up-next
 - [x] Guide screen (EPG): current/next per channel with progress, tap-to-play
 - [x] Settings: source management (add/remove/enable remote M3U + EPG URL)
+- [x] Xtream Codes provider integration (live categories/streams, credentials
+      in flutter_secure_storage, verified before saving, never disk-cached)
+- [x] EPG tiered matching: exact tvg-id, then normalised display-name with
+      quality-suffix stripping (HD/FHD/SD/4k/…)
+- [x] Player audio-track selection (media_kit track list, Auto/Off included)
 
 ### Phase 4 — Streaming experience — DONE (2026-10-28)
 - [x] Cinematic home: featured hero, continue-watching, favourites, group rails
 - [x] Search across channels/groups with empty & loading states
 - [x] Watch history + continue watching
+- [x] Branded first-run onboarding (3 slides, gated by preferences flag)
 - [ ] Movies/series catalogue view — deferred: no bundled provider supports
       VOD; adapter slot exists in ContentSource for authorised providers later.
 
@@ -82,7 +88,7 @@ Key decisions:
 
 ### Phase 6 — Hardening — PARTIAL
 - [x] Unit tests for parsers/models/stores; widget tests for key screens
-      (23 tests, all passing; flutter analyze clean)
+      (30 tests, all passing; flutter analyze clean)
 - [x] Security basics: http(s)-only source validation, no credentials stored,
       per-source failure isolation; keystore files confirmed git-ignored
 - [x] Playlist scale test (5,000 channels parsed under a strict time bound)

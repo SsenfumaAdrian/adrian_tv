@@ -13,19 +13,24 @@ void main() {
     GoogleFonts.config.allowRuntimeFetching = false;
   });
 
-  Future<AppPreferences> buildPrefs() async {
-    SharedPreferences.setMockInitialValues({});
+  Future<AppPreferences> buildPrefs({bool onboarded = true}) async {
+    SharedPreferences.setMockInitialValues({
+      'onboarding_complete_v1': onboarded,
+    });
     return AppPreferences(await SharedPreferences.getInstance());
   }
 
   Future<void> pumpApp(
     WidgetTester tester, {
     List<Channel> channels = const [],
+    bool onboarded = true,
   }) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          appPreferencesProvider.overrideWithValue(await buildPrefs()),
+          appPreferencesProvider.overrideWithValue(
+            await buildPrefs(onboarded: onboarded),
+          ),
           channelsProvider.overrideWith((ref) => Future.value(channels)),
           epgIndexProvider.overrideWith((ref) => EpgIndex(const [])),
         ],
@@ -33,6 +38,17 @@ void main() {
       ),
     );
   }
+
+  testWidgets('first run shows onboarding and can be skipped', (tester) async {
+    await pumpApp(tester, onboarded: false);
+    await tester.pump(const Duration(milliseconds: 1600));
+    await tester.pumpAndSettle();
+    expect(find.text('Your living room, one app'), findsOneWidget);
+
+    await tester.tap(find.text('Skip'));
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome to ADRIAN TV'), findsOneWidget);
+  });
 
   testWidgets('splash shows branding then lands on home', (tester) async {
     await pumpApp(tester);

@@ -144,7 +144,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         ref
             .watch(epgIndexProvider)
             .valueOrNull
-            ?.upcoming(channel.tvgId, limit: 5) ??
+            ?.upcomingForChannel(channel, limit: 5) ??
         const [];
 
     return Scaffold(
@@ -166,6 +166,72 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
       ),
     );
   }
+
+  void _showAudioTrackSheet() {
+    final tracks = _player.state.tracks.audio;
+    final currentId = _player.state.track.audio.id;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                'Audio track',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+            Flexible(
+              child: RadioGroup<String>(
+                groupValue: currentId,
+                onChanged: (value) {
+                  final track = tracks.where((t) => t.id == value).firstOrNull;
+                  Navigator.of(sheetContext).pop();
+                  if (track != null) {
+                    _player.setAudioTrack(track);
+                  }
+                },
+                child: ListView(
+                  shrinkWrap: true,
+                  children: [
+                    for (final track in tracks)
+                      RadioListTile<String>(
+                        value: track.id,
+                        title: Text(_audioTrackLabel(track)),
+                      ),
+                    if (tracks.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'This stream exposes no selectable audio tracks.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _audioTrackLabel(AudioTrack track) => switch (track.id) {
+    'auto' => 'Auto',
+    'no' => 'Off',
+    _ => [
+      if (track.title != null && track.title!.isNotEmpty) track.title!,
+      if (track.language != null && track.language!.isNotEmpty) track.language!,
+      if ((track.title == null || track.title!.isEmpty) &&
+          (track.language == null || track.language!.isEmpty))
+        'Track ${track.id}',
+    ].join(' · '),
+  };
 
   void _saveProgress() {
     final channel = _channel;
@@ -334,6 +400,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                       tooltip: 'Reload stream',
                                       icon: const Icon(Icons.refresh_rounded),
                                       onPressed: _retry,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    IconButton(
+                                      tooltip: 'Audio track',
+                                      icon: const Icon(
+                                        Icons.audiotrack_rounded,
+                                      ),
+                                      onPressed: _showAudioTrackSheet,
                                     ),
                                   ],
                                 ),

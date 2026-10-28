@@ -16,11 +16,14 @@ provide them.
   watching and favourites.
 - Live TV: channel grid/list, category chips, in-list filter, favourites.
 - Player (media_kit / libmpv+FFmpeg): HLS & TS playback, auto-hiding controls,
-  stream error overlay with retry, wake-lock, "up next" guide panel.
-- EPG: XMLTV support per source, now/next with live progress bar, guide
-  screen, 1-minute refresh.
-- Multiple user-configured M3U/M3U8 sources (remote URL), enable/disable,
-  disk-cached parsing with TTL, resilient per-source failure handling.
+  stream error overlay with retry, audio-track selection, wake-lock,
+  "up next" guide panel.
+- EPG: XMLTV support per source with tiered channel matching (tvg-id, then
+  normalised name), now/next with live progress bar, guide screen,
+  1-minute refresh.
+- Multiple user-configured sources: remote M3U/M3U8 playlists (disk-cached
+  parsing, per-source failure isolation) and Xtream Codes providers
+  (credentials verified on add, kept in encrypted storage, never cached).
 - Search across all enabled sources; watch history.
 - Android TV: Leanback launcher intent, touchscreen-optional manifest,
   side-rail navigation at ≥ 900 dp, focus-glow theme helpers.
@@ -60,8 +63,9 @@ Settings → Content sources → **Add M3U playlist source**:
 - EPG URL (optional): an XMLTV guide for that playlist.
 
 Only add playlists you own or are authorised to access. Playlist bodies are
-cached under the app support directory; provider credentials are never
-required by the current source types and must never be committed to Git.
+cached under the app support directory. Xtream credentials live only in
+encrypted device storage and are never committed to Git or written to the
+playlist cache.
 
 ## Privacy & security
 

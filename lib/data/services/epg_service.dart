@@ -23,28 +23,39 @@ class EpgService {
   final Dio _dio;
 
   Future<EpgIndex> buildIndex(List<ContentSource> sources) async {
-    final all = <Programme>[];
+    final programmes = <Programme>[];
+    final definitions = <EpgChannelDefinition>[];
     for (final source in sources.where((s) => s.enabled)) {
-      all.addAll(await programmesFor(source));
+      if (source.isDemo) {
+        programmes.addAll(_demoProgrammes());
+        continue;
+      }
+      final result = await _parseRemoteGuide(source);
+      programmes.addAll(result.programmes);
+      definitions.addAll(result.channelDefinitions);
     }
-    return EpgIndex(all);
+    return EpgIndex(programmes, channelDefinitions: definitions);
   }
 
-  Future<List<Programme>> programmesFor(ContentSource source) async {
-    if (source.isDemo) return _demoProgrammes();
+  Future<EpgParseResult> _parseRemoteGuide(ContentSource source) async {
+    const empty = EpgParseResult(programmes: [], channelDefinitions: []);
     final url = source.epgUrl;
-    if (url == null || url.isEmpty) return const [];
+    if (url == null || url.isEmpty) {
+      return empty;
+    }
     try {
       final response = await _dio.get<String>(
         url,
         options: Options(responseType: ResponseType.plain),
       );
       final body = response.data;
-      if (body == null) return const [];
-      return XmltvParser.parse(body).programmes;
+      if (body == null) {
+        return empty;
+      }
+      return XmltvParser.parse(body);
     } on Exception {
       // A broken guide must never break channel playback.
-      return const [];
+      return empty;
     }
   }
 

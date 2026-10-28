@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../features/channels/channels_screen.dart';
 import '../features/epg/guide_screen.dart';
 import '../features/home/home_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
 import '../features/player/player_screen.dart';
 import '../features/search/search_screen.dart';
 import '../features/settings/settings_screen.dart';
@@ -12,6 +13,7 @@ import '../features/splash/splash_screen.dart';
 
 abstract final class AppRoute {
   static const splash = '/splash';
+  static const onboarding = '/onboarding';
   static const home = '/home';
   static const live = '/live';
   static const guide = '/guide';
@@ -23,13 +25,19 @@ abstract final class AppRoute {
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
-final router = GoRouter(
+/// Built per app instance (and per widget test) so navigation state never
+/// leaks across restarts.
+GoRouter buildRouter() => GoRouter(
   navigatorKey: rootNavigatorKey,
   initialLocation: AppRoute.splash,
   routes: [
     GoRoute(
       path: AppRoute.splash,
       builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: AppRoute.onboarding,
+      builder: (context, state) => const OnboardingScreen(),
     ),
     ShellRoute(
       builder: (context, state, child) =>

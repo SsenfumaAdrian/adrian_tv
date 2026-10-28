@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../data/local/secure_store.dart';
 import '../../data/models/content_source.dart';
+import '../../data/remote/xtream_client.dart';
 import '../providers/app_providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -38,6 +40,8 @@ class SettingsScreen extends ConsumerWidget {
                     leading: Icon(
                       source.isDemo
                           ? Icons.science_outlined
+                          : source.type == SourceType.xtream
+                          ? Icons.dns_outlined
                           : Icons.storage_outlined,
                       color: source.enabled
                           ? AppColors.cyan
@@ -80,10 +84,21 @@ class SettingsScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              onPressed: () => _showSourceEditor(context, ref),
-              icon: const Icon(Icons.add),
-              label: const Text('Add M3U playlist source'),
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => _showSourceEditor(context, ref),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add M3U playlist source'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _showXtreamEditor(context, ref),
+                  icon: const Icon(Icons.dns),
+                  label: const Text('Add Xtream provider'),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -152,7 +167,6 @@ class SettingsScreen extends ConsumerWidget {
     final urlController = TextEditingController();
     final epgController = TextEditingController();
     final formKey = GlobalKey<FormState>();
-
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -232,6 +246,136 @@ class SettingsScreen extends ConsumerWidget {
             child: const Text('Add source'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showXtreamEditor(BuildContext context, WidgetRef ref) {
+    final nameController = TextEditingController();
+    final serverController = TextEditingController();
+    final userController = TextEditingController();
+    final passController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    var saving = false;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: const Text('Add Xtream Codes provider'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Name'),
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Give the provider a name'
+                        : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: serverController,
+                    keyboardType: TextInputType.url,
+                    decoration: const InputDecoration(
+                      labelText: 'Server URL (http(s))',
+                      helperText: 'e.g. http://provider.example:8080',
+                    ),
+                    validator: (v) {
+                      final uri = Uri.tryParse(v ?? '');
+                      return (uri == null ||
+                              !uri.hasScheme ||
+                              !['http', 'https'].contains(uri.scheme))
+                          ? 'Enter a valid http(s) server URL'
+                          : null;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: userController,
+                    decoration: const InputDecoration(labelText: 'Username'),
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: passController,
+                    obscureText: true,
+                    decoration: const InputDecoration(labelText: 'Password'),
+                    validator: (v) =>
+                        (v == null || v.isEmpty) ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Credentials are stored in encrypted device storage and '
+                    'are only sent to this server.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      if (!formKey.currentState!.validate()) return;
+                      setDialogState(() => saving = true);
+                      final sourceId = const Uuid().v4();
+                      final credentials = ProviderCredentials(
+                        username: userController.text.trim(),
+                        password: passController.text,
+                      );
+                      final client = XtreamClient();
+                      final ok = await client.authenticate(
+                        serverController.text.trim(),
+                        credentials,
+                      );
+                      if (!ok) {
+                        if (!dialogContext.mounted) return;
+                        setDialogState(() => saving = false);
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Provider rejected the credentials or is '
+                              'unreachable.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+                      await ref
+                          .read(credentialsStoreProvider)
+                          .write(sourceId, credentials);
+                      await ref
+                          .read(sourcesProvider.notifier)
+                          .add(
+                            ContentSource(
+                              id: sourceId,
+                              name: nameController.text.trim(),
+                              type: SourceType.xtream,
+                              url: serverController.text.trim(),
+                            ),
+                          );
+                      if (dialogContext.mounted) {
+                        Navigator.of(dialogContext).pop();
+                      }
+                    },
+              child: Text(saving ? 'Checking…' : 'Add provider'),
+            ),
+          ],
+        ),
       ),
     );
   }

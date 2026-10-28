@@ -110,8 +110,8 @@ class _GuideRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final programmes = index?.programmesFor(channel.tvgId) ?? const [];
-    final current = index?.now(channel.tvgId, now);
+    final programmes = index?.programmesForChannel(channel) ?? const [];
+    final current = index?.nowFor(channel, now);
     final upcoming = programmes
         .where((p) => !p.stop.isBefore(now) && p != current)
         .take(3)

@@ -10,6 +10,9 @@ enum SourceType {
 
   /// Local file path chosen by the user.
   localM3u,
+
+  /// Xtream Codes API provider (username/password in secure storage).
+  xtream,
 }
 
 /// A user-configured content source.
@@ -49,6 +52,10 @@ class ContentSource extends Equatable {
   final String? epgUrl;
 
   bool get isDemo => type == SourceType.demo;
+
+  /// Source types whose data must not be written to the on-disk playlist
+  /// cache (stream URLs embed credentials).
+  bool get isSensitive => type == SourceType.xtream;
 
   ContentSource copyWith({
     bool? enabled,
