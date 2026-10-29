@@ -69,6 +69,8 @@ Key decisions:
 - [x] EPG tiered matching: exact tvg-id, then normalised display-name with
       quality-suffix stripping (HD/FHD/SD/4k/…)
 - [x] Player audio-track selection (media_kit track list, Auto/Off included)
+- [x] Player subtitle-track selection (same generic track sheet)
+- [x] Resume: VOD playback seeks to the last saved position when unfinished
 - [x] Alternate-stream failover: same-name mirror URLs are tried before the
       error overlay is shown
 - [x] Per-source error surfacing: playlistLoadProvider reports a
@@ -107,6 +109,8 @@ Key decisions:
 ### Phase 7 — Release preparation — PARTIAL
 - [x] README with setup, features, limitations, legal notes
 - [x] Android build + signing instructions documented (keystore not yet created)
+- [x] Real applicationId/namespace: com.ssenfuma.adriantv (was com.example)
+- [x] CI: GitHub Actions runs format check, analyze and tests on main/PRs
 - [ ] Actual release build/sign run (needs Android SDK)
 
 ## Risks

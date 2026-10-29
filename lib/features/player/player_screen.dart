@@ -149,6 +149,26 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         _failoverNotice = null;
       });
       _player.open(Media(_candidates.first), play: true);
+      // Read the previous position before recording replaces the entry.
+      final previous = target.channel == null
+          ? ref
+                .read(historyProvider)
+                .where((e) => e.channelId == target.id)
+                .firstOrNull
+          : null;
+      final resumeAt = previous?.positionMs;
+      if (previous != null &&
+          resumeAt != null &&
+          resumeAt > 5000 &&
+          !previous.isFinished) {
+        late final StreamSubscription<Duration> durationSub;
+        durationSub = _player.stream.duration.listen((d) {
+          if (d > Duration.zero) {
+            durationSub.cancel();
+            _player.seek(Duration(milliseconds: resumeAt));
+          }
+        });
+      }
       ref
           .read(historyProvider.notifier)
           .record(
@@ -197,8 +217,49 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   }
 
   void _showAudioTrackSheet() {
-    final tracks = _player.state.tracks.audio;
-    final currentId = _player.state.track.audio.id;
+    _showTrackSheet(
+      heading: 'Audio track',
+      tracks: [
+        for (final t in _player.state.tracks.audio)
+          (id: t.id, title: t.title, language: t.language),
+      ],
+      currentId: _player.state.track.audio.id,
+      onSelect: (id) {
+        final track = _player.state.tracks.audio
+            .where((t) => t.id == id)
+            .firstOrNull;
+        if (track != null) {
+          _player.setAudioTrack(track);
+        }
+      },
+    );
+  }
+
+  void _showSubtitleTrackSheet() {
+    _showTrackSheet(
+      heading: 'Subtitles',
+      tracks: [
+        for (final t in _player.state.tracks.subtitle)
+          (id: t.id, title: t.title, language: t.language),
+      ],
+      currentId: _player.state.track.subtitle.id,
+      onSelect: (id) {
+        final track = _player.state.tracks.subtitle
+            .where((t) => t.id == id)
+            .firstOrNull;
+        if (track != null) {
+          _player.setSubtitleTrack(track);
+        }
+      },
+    );
+  }
+
+  void _showTrackSheet({
+    required String heading,
+    required List<({String id, String? title, String? language})> tracks,
+    required String currentId,
+    required void Function(String id) onSelect,
+  }) {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: AppColors.surface,
@@ -209,7 +270,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'Audio track',
+                heading,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
@@ -217,11 +278,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
               child: RadioGroup<String>(
                 groupValue: currentId,
                 onChanged: (value) {
-                  final track = tracks.where((t) => t.id == value).firstOrNull;
                   Navigator.of(sheetContext).pop();
-                  if (track != null) {
-                    _player.setAudioTrack(track);
-                  }
+                  if (value != null) onSelect(value);
                 },
                 child: ListView(
                   shrinkWrap: true,
@@ -229,15 +287,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                     for (final track in tracks)
                       RadioListTile<String>(
                         value: track.id,
-                        title: Text(_audioTrackLabel(track)),
+                        title: Text(_trackLabel(track)),
                       ),
                     if (tracks.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(24),
+                      Padding(
+                        padding: const EdgeInsets.all(24),
                         child: Text(
-                          'This stream exposes no selectable audio tracks.',
+                          'This stream has no selectable ${heading.toLowerCase()}.',
                           textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.textSecondary),
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                   ],
@@ -250,7 +310,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
     );
   }
 
-  static String _audioTrackLabel(AudioTrack track) => switch (track.id) {
+  static String _trackLabel(
+    ({String id, String? title, String? language}) track,
+  ) => switch (track.id) {
     'auto' => 'Auto',
     'no' => 'Off',
     _ => [
@@ -446,6 +508,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
                                         Icons.audiotrack_rounded,
                                       ),
                                       onPressed: _showAudioTrackSheet,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    IconButton(
+                                      tooltip: 'Subtitles',
+                                      icon: const Icon(
+                                        Icons.closed_caption_rounded,
+                                      ),
+                                      onPressed: _showSubtitleTrackSheet,
                                     ),
                                   ],
                                 ),
