@@ -1,5 +1,7 @@
 # ADRIAN TV
 
+![CI](https://github.com/SsenfumaAdrian/adrian_tv/actions/workflows/ci.yml/badge.svg)
+
 A premium, original Flutter streaming application for Android phones and
 Android TV (adaptable to other Flutter platforms). **Live television is a
 first-class feature**; movies and series appear when your configured sources
