@@ -104,14 +104,15 @@ Key decisions:
       per-source failure isolation; keystore files confirmed git-ignored
 - [x] Playlist scale test (5,000 channels parsed under a strict time bound)
 - [ ] Drift migration decision once catalogue features (movies/series) start
-- [ ] Native build verification (blocked: Android SDK / VS C++ absent)
+- [x] Native build verification: Android debug APK + Windows web build green
 
 ### Phase 7 — Release preparation — PARTIAL
 - [x] README with setup, features, limitations, legal notes
 - [x] Android build + signing instructions documented (keystore not yet created)
 - [x] Real applicationId/namespace: com.ssenfuma.adriantv (was com.example)
 - [x] CI: GitHub Actions runs format check, analyze and tests on main/PRs
-- [ ] Actual release build/sign run (needs Android SDK)
+- [x] Debug APK build verified on device toolchain (app-debug.apk, all ABIs)
+- [ ] Actual release build/sign run (keystore creation pending)
 
 ## Risks
 
