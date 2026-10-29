@@ -35,8 +35,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
   Timer? _hideTimer;
   List<String> _candidates = const [];
   int _candidateIndex = 0;
+  DateTime? _openedAt;
+  DateTime? _bufferingSince;
+  bool _ttffRecorded = false;
 
   static final _time = DateFormat.Hm();
+
+  String get _currentUrl =>
+      _candidateIndex < _candidates.length ? _candidates[_candidateIndex] : '';
 
   @override
   void initState() {
@@ -49,14 +55,38 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
           _error = null;
           _failoverNotice = null;
         });
+        _recordTimeToFirstFrame();
       }
     });
+    _player.stream.buffering.listen((buffering) {
+      if (buffering) {
+        _bufferingSince = DateTime.now();
+      } else if (_bufferingSince != null) {
+        final stalledFor = DateTime.now().difference(_bufferingSince!);
+        _bufferingSince = null;
+        if (stalledFor >= const Duration(milliseconds: 1500)) {
+          ref.read(streamHealthProvider).recordStall(_currentUrl);
+        }
+      }
+    });
+  }
+
+  void _recordTimeToFirstFrame() {
+    if (_ttffRecorded || _openedAt == null) return;
+    _ttffRecorded = true;
+    ref
+        .read(streamHealthProvider)
+        .recordTimeToFirstFrame(
+          _currentUrl,
+          DateTime.now().difference(_openedAt!).inMilliseconds,
+        );
   }
 
   /// Walk same-name mirror URLs before admitting defeat.
   void _onPlayerError(String message) {
     if (message.isEmpty || !mounted) return;
     if (_candidateIndex + 1 < _candidates.length) {
+      ref.read(streamHealthProvider).recordStall(_currentUrl);
       _candidateIndex++;
       setState(() {
         _error = null;
@@ -149,6 +179,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen> {
         _failoverNotice = null;
       });
       _player.open(Media(_candidates.first), play: true);
+      _openedAt = DateTime.now();
+      _ttffRecorded = false;
       // Read the previous position before recording replaces the entry.
       final previous = target.channel == null
           ? ref

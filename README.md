@@ -98,7 +98,13 @@ Upstream research and licence analysis: [docs/REPOSITORY_EVALUATION.md](docs/REP
 
 - ADRIAN TV branding assets in `assets/` are original.
 - Typography uses Inter via `google_fonts` (SIL OFL) at runtime.
-- `clubTivi` (Apache-2.0) is the designated code-donor for any future
-  adoption of its parser/failover internals; attribution will be recorded
-  in `NOTICE` if code is imported. GPL-licensed repositories studied during
-  research were used as read-only references — no code was copied.
+- **Third-party code:** `lib/data/services/epg_matcher.dart` and
+  `lib/data/services/stream_health_tracker.dart` are derived from
+  [clubTivi](https://github.com/clubanderson/clubTivi) (Copyright Anderson,
+  Apache License 2.0 — full text at `third_party/clubtivi/LICENSE`).
+  Both were modified for this project: adapted to ADRIAN TV's models,
+  persistence routed through `AppPreferences`, fuzzy matching pre-filtered
+  through a token index, and stable tie-breaks added to failover ordering.
+  No other clubTivi code is present. GPL-licensed repositories studied
+  during research (OpenIPTV) were used as read-only references — zero lines
+  copied.

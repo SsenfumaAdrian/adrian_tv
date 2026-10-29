@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../models/content_source.dart';
 import '../models/programme.dart';
 import '../parsers/xmltv_parser.dart';
+import 'epg_lookup.dart';
 
 /// Provides programme-guide data per channel.
 ///

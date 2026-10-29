@@ -10,7 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/tv_focusable.dart';
 import '../../data/models/channel.dart';
 import '../../data/models/programme.dart';
-import '../../data/parsers/xmltv_parser.dart';
+import '../../data/services/epg_lookup.dart';
 import '../providers/app_providers.dart';
 
 /// Electronic programme guide: one row per channel with a live progress bar

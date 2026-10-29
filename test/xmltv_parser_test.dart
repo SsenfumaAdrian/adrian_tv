@@ -2,6 +2,7 @@ import 'package:adrian_tv/data/models/channel.dart';
 import 'package:adrian_tv/data/models/programme.dart';
 import 'package:adrian_tv/data/models/watch_progress.dart';
 import 'package:adrian_tv/data/parsers/xmltv_parser.dart';
+import 'package:adrian_tv/data/services/epg_lookup.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

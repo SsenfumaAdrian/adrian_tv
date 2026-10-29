@@ -11,7 +11,8 @@ import '../../data/repositories/channel_repository.dart';
 import '../../data/repositories/media_repository.dart';
 import '../../data/services/epg_service.dart';
 import '../../data/services/stream_failover.dart';
-import '../../data/parsers/xmltv_parser.dart';
+import '../../data/services/stream_health_tracker.dart';
+import '../../data/services/epg_lookup.dart';
 
 /// Overridden with the initialised instance in `main.dart`.
 final appPreferencesProvider = Provider<AppPreferences>(
@@ -20,6 +21,10 @@ final appPreferencesProvider = Provider<AppPreferences>(
 
 final credentialsStoreProvider = Provider<CredentialsStore>(
   (ref) => SecureCredentialsStore(),
+);
+
+final streamHealthProvider = Provider<StreamHealthTracker>(
+  (ref) => StreamHealthTracker(ref.watch(appPreferencesProvider)),
 );
 
 final channelRepositoryProvider = Provider<ChannelRepository>(
@@ -316,7 +321,11 @@ final playbackTargetProvider = FutureProvider.family<PlaybackTarget?, String>((
   return PlaybackTarget(
     id: channel.id,
     title: channel.name,
-    candidates: StreamFailover.candidatesFor(channel, load.channels),
+    candidates: StreamFailover.candidatesFor(
+      channel,
+      load.channels,
+      healthOf: ref.watch(streamHealthProvider).score,
+    ),
     logoUrl: channel.logoUrl,
     channel: channel,
   );

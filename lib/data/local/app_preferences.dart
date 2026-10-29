@@ -16,6 +16,7 @@ class AppPreferences {
   static const _favouritesKey = 'favourite_channel_ids_v1';
   static const _historyKey = 'watch_history_v1';
   static const _onboardedKey = 'onboarding_complete_v1';
+  static const _streamHealthKey = 'stream_health_v1';
 
   final SharedPreferences _prefs;
 
@@ -63,4 +64,9 @@ class AppPreferences {
 
   Future<void> setOnboardingComplete(bool value) =>
       _prefs.setBool(_onboardedKey, value);
+
+  String? readStreamHealthJson() => _prefs.getString(_streamHealthKey);
+
+  Future<void> writeStreamHealthJson(String json) =>
+      _prefs.setString(_streamHealthKey, json);
 }

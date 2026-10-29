@@ -1,14 +1,27 @@
+import 'package:collection/collection.dart';
 import 'package:xml/xml.dart';
 
-import '../models/channel.dart';
 import '../models/programme.dart';
 
 /// A single `<channel>` definition from an XMLTV document.
 class EpgChannelDefinition {
-  const EpgChannelDefinition({required this.id, required this.displayName});
+  const EpgChannelDefinition({
+    required this.id,
+    required this.displayName,
+    this.displayNames = const [],
+    this.iconUrl,
+    this.lcn,
+  });
 
   final String id;
   final String displayName;
+
+  /// Every `<display-name>` value; used by the scored matcher.
+  final List<String> displayNames;
+  final String? iconUrl;
+
+  /// Logical channel number from `<lcn>`, if the guide provides one.
+  final String? lcn;
 }
 
 class EpgParseResult {
@@ -36,8 +49,21 @@ class XmltvParser {
     for (final node in root.findElements('channel')) {
       final id = node.getAttribute('id');
       if (id == null) continue;
-      final display = _firstText(node, 'display-name') ?? id;
-      channelDefs.add(EpgChannelDefinition(id: id, displayName: display));
+      final names = node
+          .findElements('display-name')
+          .map((e) => e.innerText.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
+      final icon = node.findElements('icon').firstOrNull;
+      channelDefs.add(
+        EpgChannelDefinition(
+          id: id,
+          displayName: names.isEmpty ? id : names.first,
+          displayNames: names,
+          iconUrl: icon?.getAttribute('src'),
+          lcn: _firstText(node, 'lcn'),
+        ),
+      );
     }
 
     final programmes = <Programme>[];
@@ -108,104 +134,5 @@ class XmltvParser {
       wallClock.minute,
       wallClock.second,
     ).subtract(Duration(minutes: sign * minutes));
-  }
-}
-
-/// In-memory index over a programme list for the guide UI.
-///
-/// Lookup is tiered like clubTivi's mapper (studied as reference, re-
-/// implemented): explicit `tvg-id` first, then normalised display-name
-/// matching so playlists without tvg-id still get guide data.
-class EpgIndex {
-  EpgIndex(
-    Iterable<Programme> programmes, {
-    Iterable<EpgChannelDefinition> channelDefinitions = const [],
-  }) : _byChannelRef = _groupByRef(programmes),
-       _refByNormalisedName = {
-         for (final def in channelDefinitions)
-           _normalise(def.displayName): def.id,
-       };
-
-  final Map<String, List<Programme>> _byChannelRef;
-  final Map<String, String> _refByNormalisedName;
-
-  static final _qualitySuffix = RegExp(
-    r'(hd|fhd|uhd|sd|4k|8k|plus|hevc|x26[45]|720p|1080p|2160p)+$',
-  );
-
-  static String _normalise(String name) {
-    var n = name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
-    String previous;
-    do {
-      previous = n;
-      n = n.replaceAll(_qualitySuffix, '');
-    } while (n != previous);
-    return n;
-  }
-
-  static Map<String, List<Programme>> _groupByRef(
-    Iterable<Programme> programmes,
-  ) {
-    final map = <String, List<Programme>>{};
-    for (final p in programmes) {
-      map.putIfAbsent(p.channelRef, () => []).add(p);
-    }
-    for (final list in map.values) {
-      list.sort((a, b) => a.start.compareTo(b.start));
-    }
-    return map;
-  }
-
-  bool get isEmpty => _byChannelRef.isEmpty;
-
-  /// Resolve the guide channel id for [channel]: exact tvg-id, then
-  /// normalised name fallbacks (channel name, then tvg-name).
-  String? resolveRef(Channel channel) {
-    final tvgId = channel.tvgId;
-    if (tvgId != null && _byChannelRef.containsKey(tvgId)) return tvgId;
-    for (final name in [
-      channel.name,
-      if (channel.tvgName != null) channel.tvgName!,
-    ]) {
-      final ref = _refByNormalisedName[_normalise(name)];
-      if (ref != null && _byChannelRef.containsKey(ref)) return ref;
-    }
-    return tvgId;
-  }
-
-  List<Programme> programmesForChannel(Channel channel) =>
-      programmesFor(resolveRef(channel));
-
-  Programme? nowFor(Channel channel, [DateTime? at]) =>
-      now(resolveRef(channel), at);
-
-  List<Programme> upcomingForChannel(
-    Channel channel, {
-    DateTime? at,
-    int limit = 10,
-  }) => upcoming(resolveRef(channel), at: at, limit: limit);
-
-  List<Programme> programmesFor(String? tvgId) {
-    if (tvgId == null) return const [];
-    return _byChannelRef[tvgId] ?? const [];
-  }
-
-  Programme? now(String? tvgId, [DateTime? at]) {
-    final moment = at ?? DateTime.now();
-    for (final p in programmesFor(tvgId)) {
-      if (p.contains(moment)) return p;
-      if (p.start.isAfter(moment)) break;
-    }
-    return null;
-  }
-
-  /// Programs starting after [at] (or after the current one), capped at [limit].
-  List<Programme> upcoming(String? tvgId, {DateTime? at, int limit = 10}) {
-    final moment = at ?? DateTime.now();
-    final current = now(tvgId, moment);
-    final startFrom = current == null ? moment : current.stop;
-    return programmesFor(
-      tvgId,
-    ).where((p) => !p.stop.isBefore(startFrom)).take(limit).toList();
   }
 }

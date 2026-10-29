@@ -1,7 +1,7 @@
 import 'package:adrian_tv/app/adrian_tv_app.dart';
 import 'package:adrian_tv/data/local/app_preferences.dart';
 import 'package:adrian_tv/data/models/channel.dart';
-import 'package:adrian_tv/data/parsers/xmltv_parser.dart';
+import 'package:adrian_tv/data/services/epg_lookup.dart';
 import 'package:adrian_tv/features/providers/app_providers.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
