@@ -82,9 +82,14 @@ http://e/b.ts
       const assetPath = 'assets/demo/demo_channels.m3u';
       final content = await File(assetPath).readAsString();
       final channels = M3uParser.parse(content, sourceId: 'demo');
-      expect(channels.length, greaterThanOrEqualTo(6));
+      expect(channels.length, greaterThanOrEqualTo(5));
       expect(channels.every((c) => c.name.startsWith('ADRIAN Demo')), isTrue);
       expect(channels.every((c) => c.group == 'Demo'), isTrue);
+      // At least one plain-mp4 stream so web builds have a playable demo.
+      expect(
+        channels.any((c) => c.streamUrl.endsWith('.mp4')),
+        isTrue,
+      );
     });
 
     test('parses a 5,000-channel playlist quickly', () {

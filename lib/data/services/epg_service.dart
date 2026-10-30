@@ -95,7 +95,7 @@ class EpgService {
       final ref = switch (hour % 3) {
         0 => 'demo.bbb',
         1 => 'demo.tos',
-        _ => 'demo.ed',
+        _ => 'demo.oceans',
       };
       programmes.add(
         Programme(
@@ -109,11 +109,7 @@ class EpgService {
       );
     }
     // Give every demo channel a full-day schedule.
-    for (final extraRef in const [
-      'demo.blazes',
-      'demo.escape',
-      'demo.joyrides',
-    ]) {
+    for (final extraRef in const ['demo.flower', 'demo.friday']) {
       for (final p
           in programmes
               .where((p) => p.channelRef == 'demo.bbb')

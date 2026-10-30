@@ -2,19 +2,19 @@
 # --------------------------------------------------------------------------
 # ADRIAN TV bundled DEMO playlist.
 # These are publicly published, licence-friendly test streams (Blender
-# Foundation open movies and CDN vendor test feeds) used only to exercise
-# the player during development. They are not real TV channels and are
-# clearly separated from user-configured production sources.
+# Foundation open movies, Mux/Unified Streaming test HLS, MDN sample clips)
+# used only to exercise the player during development. They are not real TV
+# channels and are clearly separated from user-configured production sources.
+# Note: Chrome cannot play the .m3u8 entries (no native HLS); they work on
+# Android/Windows via media_kit's libmpv. The .mp4 entries play everywhere.
 # --------------------------------------------------------------------------
 #EXTINF:-1 tvg-id="demo.bbb" tvg-name="Demo Big Buck Bunny" tvg-logo="" group-title="Demo",ADRIAN Demo: Big Buck Bunny
 https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8
 #EXTINF:-1 tvg-id="demo.tos" tvg-name="Demo Tears of Steel" tvg-logo="" group-title="Demo",ADRIAN Demo: Tears of Steel
 https://demo.unified-streaming.com/k8s/features/stable/video/tears-of-steel/tears-of-steel.ism/.m3u8
-#EXTINF:-1 tvg-id="demo.ed" tvg-name="Demo Elephants Dream" tvg-logo="" group-title="Demo",ADRIAN Demo: Elephants Dream
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4
-#EXTINF:-1 tvg-id="demo.blazes" tvg-name="Demo For Bigger Blazes" tvg-logo="" group-title="Demo",ADRIAN Demo: For Bigger Blazes
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4
-#EXTINF:-1 tvg-id="demo.escape" tvg-name="Demo For Bigger Escapes" tvg-logo="" group-title="Demo",ADRIAN Demo: For Bigger Escapes
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4
-#EXTINF:-1 tvg-id="demo.joyrides" tvg-name="Demo For Bigger Joyrides" tvg-logo="" group-title="Demo",ADRIAN Demo: For Bigger Joyrides
-https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4
+#EXTINF:-1 tvg-id="demo.oceans" tvg-name="Demo Ocean's" tvg-logo="" group-title="Demo",ADRIAN Demo: Oceans (mp4)
+https://vjs.zencdn.net/v/oceans.mp4
+#EXTINF:-1 tvg-id="demo.flower" tvg-name="Demo Flower" tvg-logo="" group-title="Demo",ADRIAN Demo: Flower (mp4)
+https://mdn.github.io/shared-assets/videos/flower.mp4
+#EXTINF:-1 tvg-id="demo.friday" tvg-name="Demo Friday" tvg-logo="" group-title="Demo",ADRIAN Demo: Friday (mp4)
+https://mdn.github.io/shared-assets/videos/friday.mp4

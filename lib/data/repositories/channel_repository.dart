@@ -77,8 +77,9 @@ class ChannelRepository {
     if (url == null || Uri.tryParse(url) == null || !url.startsWith('http')) {
       throw PlaylistException('Invalid playlist URL for ${source.name}');
     }
-    final cacheFile = await _cacheFile(source.id);
-    if (await _isFresh(cacheFile)) {
+    // Web has no path_provider; fetch every time without disk caching.
+    final cacheFile = kIsWeb ? null : await _cacheFile(source.id);
+    if (cacheFile != null && await _isFresh(cacheFile)) {
       try {
         return _decodeCache(await cacheFile.readAsString());
       } on Object {
@@ -91,7 +92,9 @@ class ChannelRepository {
     );
     final body = response.data ?? '';
     final channels = M3uParser.parse(body, sourceId: source.id);
-    unawaited(_writeCache(cacheFile, channels));
+    if (cacheFile != null) {
+      unawaited(_writeCache(cacheFile, channels));
+    }
     return channels;
   }
 
@@ -153,6 +156,7 @@ class ChannelRepository {
 
   /// Clears cached playlists so sources re-download (used by "refresh").
   Future<void> clearCache() async {
+    if (kIsWeb) return;
     final dir = await getApplicationSupportDirectory();
     final cacheDir = Directory(p.join(dir.path, 'playlist_cache'));
     if (await cacheDir.exists()) await cacheDir.delete(recursive: true);
