@@ -86,10 +86,7 @@ http://e/b.ts
       expect(channels.every((c) => c.name.startsWith('ADRIAN Demo')), isTrue);
       expect(channels.every((c) => c.group == 'Demo'), isTrue);
       // At least one plain-mp4 stream so web builds have a playable demo.
-      expect(
-        channels.any((c) => c.streamUrl.endsWith('.mp4')),
-        isTrue,
-      );
+      expect(channels.any((c) => c.streamUrl.endsWith('.mp4')), isTrue);
     });
 
     test('parses a 5,000-channel playlist quickly', () {
@@ -109,6 +106,19 @@ http://e/b.ts
       expect(channels.last.name, 'Channel 4999');
       // Generous ceiling: guards against accidental O(n^2) regressions.
       expect(sw.elapsed, lessThan(const Duration(seconds: 5)));
+    });
+
+    test('parses the bundled public free-to-air playlist', () async {
+      const assetPath = 'assets/sources/public_free_to_air.m3u';
+      final content = await File(assetPath).readAsString();
+      final channels = M3uParser.parse(content, sourceId: 'public');
+      expect(channels.length, greaterThanOrEqualTo(7));
+      // Every shipped public feed must be https and a real broadcaster.
+      expect(channels.every((c) => c.streamUrl.startsWith('https://')), isTrue);
+      expect(
+        channels.map((c) => c.name),
+        containsAll(['DW English', 'France 24 English', 'NASA TV Public']),
+      );
     });
 
     test('Channel JSON round-trip', () {

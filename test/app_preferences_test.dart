@@ -12,9 +12,9 @@ void main() {
     return AppPreferences(await SharedPreferences.getInstance());
   }
 
-  test('sources default to the bundled demo when unset', () async {
+  test('sources default to the bundled sources when unset', () async {
     final p = await prefs();
-    expect(p.readSources(), [ContentSource.demo]);
+    expect(p.readSources(), [ContentSource.demo, ContentSource.publicFta]);
   });
 
   test('sources survive a write/read round-trip', () async {
@@ -33,10 +33,10 @@ void main() {
     expect(p.readSources(), sources);
   });
 
-  test('corrupt source JSON falls back to demo', () async {
+  test('corrupt source JSON falls back to the bundled sources', () async {
     SharedPreferences.setMockInitialValues({'content_sources_v1': '{not json'});
     final p = AppPreferences(await SharedPreferences.getInstance());
-    expect(p.readSources(), [ContentSource.demo]);
+    expect(p.readSources(), [ContentSource.demo, ContentSource.publicFta]);
   });
 
   test('favourites persist as a set of ids', () async {

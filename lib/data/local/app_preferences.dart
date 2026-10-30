@@ -20,18 +20,20 @@ class AppPreferences {
 
   final SharedPreferences _prefs;
 
+  static final _builtIns = [ContentSource.demo, ContentSource.publicFta];
+
   List<ContentSource> readSources() {
     final raw = _prefs.getString(_sourcesKey);
-    if (raw == null) return [ContentSource.demo];
+    if (raw == null) return List.of(_builtIns);
     try {
       final list = (jsonDecode(raw) as List)
           .cast<Map<String, dynamic>>()
           .map(ContentSource.fromJson)
           .toList();
-      if (list.isEmpty) return [ContentSource.demo];
+      if (list.isEmpty) return List.of(_builtIns);
       return list;
     } on FormatException {
-      return [ContentSource.demo];
+      return List.of(_builtIns);
     }
   }
 

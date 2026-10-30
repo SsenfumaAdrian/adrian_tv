@@ -49,6 +49,7 @@ class ChannelRepository {
   Future<List<Channel>> loadChannels(ContentSource source) async {
     switch (source.type) {
       case SourceType.demo:
+      case SourceType.bundled:
       case SourceType.localM3u:
         final raw = await _readLocal(source);
         return M3uParser.parse(raw, sourceId: source.id);
@@ -62,7 +63,7 @@ class ChannelRepository {
   Future<String> _readLocal(ContentSource source) async {
     final url = source.url;
     if (url == null) return '';
-    if (source.isDemo) {
+    if (source.usesAssetPath) {
       return rootBundle.loadString(url);
     }
     final file = File(url);

@@ -40,6 +40,8 @@ class SettingsScreen extends ConsumerWidget {
                     leading: Icon(
                       source.isDemo
                           ? Icons.science_outlined
+                          : source.type == SourceType.bundled
+                          ? Icons.cell_tower
                           : source.type == SourceType.xtream
                           ? Icons.dns_outlined
                           : Icons.storage_outlined,
@@ -51,6 +53,8 @@ class SettingsScreen extends ConsumerWidget {
                     subtitle: Text(
                       source.isDemo
                           ? 'Bundled demo streams (not real channels)'
+                          : source.type == SourceType.bundled
+                          ? 'Publicly-published free-to-air channels'
                           : source.url ?? '—',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -64,7 +68,7 @@ class SettingsScreen extends ConsumerWidget {
                               .read(sourcesProvider.notifier)
                               .toggle(source.id),
                         ),
-                        if (!source.isDemo)
+                        if (!source.isBuiltIn)
                           IconButton(
                             tooltip: 'Remove source',
                             icon: const Icon(

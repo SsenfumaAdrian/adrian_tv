@@ -1,0 +1,24 @@
+#EXTM3U
+# --------------------------------------------------------------------------
+# ADRIAN TV bundled "Public Free-to-Air" source.
+# These are live streams that the rights-holders themselves publish for free
+# public viewing: Deutsche Welle (DW), France 24 (France Medias Monde) and
+# NASA TV (U.S. Government, public domain). No third-party retransmissions,
+# no premium/pirated feeds. Verified reachable at build time; a broadcaster
+# may still geo-restrict or move a feed, in which case the player shows its
+# normal error/retry state. You can disable this source in Settings.
+# --------------------------------------------------------------------------
+#EXTINF:-1 tvg-id="dw.english" group-title="News",DW English
+https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8
+#EXTINF:-1 tvg-id="dw.spanish" group-title="News",DW Spanish
+https://dwamdstream106.akamaized.net/hls/live/2017965/dwstream106/index.m3u8
+#EXTINF:-1 tvg-id="france24.english" group-title="News",France 24 English
+https://static.france24.com/live/F24_EN_LO_HLS/live_web.m3u8
+#EXTINF:-1 tvg-id="france24.french" group-title="News",France 24 Français
+https://static.france24.com/live/F24_FR_LO_HLS/live_web.m3u8
+#EXTINF:-1 tvg-id="france24.spanish" group-title="News",France 24 Español
+https://static.france24.com/live/F24_ES_LO_HLS/live_web.m3u8
+#EXTINF:-1 tvg-id="france24.arabic" group-title="News",France 24 العربية
+https://static.france24.com/live/F24_AR_LO_HLS/live_web.m3u8
+#EXTINF:-1 tvg-id="nasa.tv" group-title="Science",NASA TV Public
+https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8

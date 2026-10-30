@@ -58,7 +58,7 @@ class SourcesNotifier extends Notifier<List<ContentSource>> {
   }
 
   Future<void> remove(String id) async {
-    if (id == ContentSource.demoId) return; // demo source is always available
+    if (ContentSource.builtInIds.contains(id)) return; // shipped sources stay
     await ref.read(credentialsStoreProvider).delete(id);
     await _save(state.where((s) => s.id != id).toList());
   }

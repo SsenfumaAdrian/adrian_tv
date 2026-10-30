@@ -109,6 +109,7 @@ flutter:
     - assets/icon/
     - assets/images/
     - assets/demo/
+    - assets/sources/
 
   # Typography is provided at runtime by google_fonts (Inter, OFL-licensed).
   # Bundling Google Sans would be a licence violation, so no fonts are embedded.

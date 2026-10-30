@@ -5,6 +5,9 @@ enum SourceType {
   /// Bundled, clearly-labelled demo playlist for first-run experience.
   demo,
 
+  /// Bundled, always-shipped playlist of legally-public free-to-air channels.
+  bundled,
+
   /// Remote M3U/M3U8 playlist fetched over HTTP(S).
   remoteM3u,
 
@@ -31,6 +34,7 @@ class ContentSource extends Equatable {
   });
 
   static const demoId = 'demo-bundled';
+  static const publicFtaId = 'public-free-to-air';
 
   static ContentSource get demo => const ContentSource(
     id: demoId,
@@ -40,11 +44,25 @@ class ContentSource extends Equatable {
     epgUrl: 'assets/demo/demo_epg.xml',
   );
 
+  /// Live channels the rights-holders publish for free public viewing
+  /// (DW, France 24, NASA TV). Ships enabled so the app has real content.
+  static ContentSource get publicFta => const ContentSource(
+    id: publicFtaId,
+    name: 'Public Free-to-Air',
+    type: SourceType.bundled,
+    url: 'assets/sources/public_free_to_air.m3u',
+  );
+
+  /// Sources shipped with the app: always available, can be toggled but not
+  /// permanently removed.
+  static const builtInIds = {demoId, publicFtaId};
+
   final String id;
   final String name;
   final SourceType type;
 
-  /// Playlist URL for remote sources, asset path for demo, file path for local.
+  /// Playlist URL for remote sources, asset path for demo/bundled, file path
+  /// for local.
   final String? url;
   final bool enabled;
 
@@ -52,6 +70,12 @@ class ContentSource extends Equatable {
   final String? epgUrl;
 
   bool get isDemo => type == SourceType.demo;
+
+  /// Loads its playlist from a bundled Flutter asset rather than the network.
+  bool get usesAssetPath =>
+      type == SourceType.demo || type == SourceType.bundled;
+
+  bool get isBuiltIn => builtInIds.contains(id);
 
   /// Source types whose data must not be written to the on-disk playlist
   /// cache (stream URLs embed credentials).
